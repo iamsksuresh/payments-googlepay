@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Pay Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .price-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .price-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .price {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        #googlePayButton {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        #loading-spinner {
+            display: none;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+            animation: slideIn 0.3s ease-in-out;
+        }
+
+        #message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        #message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .demo-info {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 30px;
+            font-size: 13px;
+            color: #0066cc;
+        }
+
+        .demo-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .transaction-details {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .transaction-details h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .test-api-buttons {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .test-api-buttons h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .api-button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #333;
+            transition: all 0.2s;
+        }
+
+        .api-button:hover {
+            background: #e0e0e0;
+            border-color: #667eea;
+        }
+
+        .api-response {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            color: #333;
+            display: none;
+        }
+
+        .api-response.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💳 Google Pay Demo</h1>
+        <p class="subtitle">Test the Google Pay integration stub</p>
+
+        <div class="price-section">
+            <div class="price-label">Amount to Pay</div>
+            <div class="price">$10.00</div>
+        </div>
+
+        <div id="loading-spinner">
+            <div class="spinner"></div>
+            <p>Processing payment...</p>
+        </div>
+
+        <div id="message"></div>
+
+        <div id="googlePayButton"></div>
+
+        <div id="transactionDetails" class="transaction-details">
+            <h3>Transaction Details</h3>
+            <div class="detail-row">
+                <span class="detail-label">Transaction ID:</span>
+                <span class="detail-value" id="txnId">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Amount:</span>
+                <span class="detail-value" id="txnAmount">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Card Last 4:</span>
+                <span class="detail-value" id="txnCard">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value" id="txnStatus">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Time:</span>
+                <span class="detail-value" id="txnTime">-</span>
+            </div>
+        </div>
+
+        <div class="demo-info">
+            <strong>ℹ️ Demo Mode Active</strong>
+            This is a stub/mock implementation. Google Pay button may not appear in TEST mode without proper configuration.
+        </div>
+
+        <div class="test-api-buttons">
+            <h3>Test API Endpoints</h3>
+            <button class="api-button" onclick="testProcessPayment()">Test Process Payment</button>
+            <button class="api-button" onclick="viewAllPayments()">View All Payments</button>
+            <div id="apiResponse" class="api-response"></div>
+        </div>
+    </div>
+
+    <script async src="https://pay.google.com/gstatic/js/pay.js"></script>
+    
+    <script>
+        // Configuration
+        const SERVER_URL = 'http://localhost:3000';
+        const PAYMENT_AMOUNT = '10.00';
+        const CURRENCY_CODE = 'USD';
+
+        let paymentsClient;
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            initializeGooglePay();
+        });
+
+        /**
+         * Initialize Google Pay
+         */
+        function initializeGooglePay() {
+            // Check if Google Pay API is loaded
+            if (typeof google === 'undefined' || !google.payments) {
+                console.warn('Google Pay API not loaded. Using fallback button.');
+                createFallbackButton();
+                return;
+            }
+
+            try {
+                paymentsClient = new google.payments.api.PaymentsClient({
+                    environment: 'TEST' // Use TEST for demo
+                });
+
+                // Check if device supports Google Pay
+                const paymentMethods = getPaymentMethods();
+                
+                paymentsClient.isReadyToPay({
+                    allowedPaymentMethods: paymentMethods
+                })
+                .then(response => {
+                    if (response.result) {
+                        createGooglePayButton();
+                    } else {
+                        console.warn('Google Pay not available on this device');
+                        createFallbackButton();
+                    }
+                })
+                .catch(err => {
+                    console.error('Error checking Google Pay availability:', err);
+                    createFallbackButton();
+                });
+            } catch (error) {
+                console.error('Error initializing Google Pay:', error);
+                createFallbackButton();
+            }
+        }
+
+        /**
+         * Get payment methods configuration
+         */
+        function getPaymentMethods() {
+            return [{
+                type: 'CARD',
+                parameters: {
+                    allowedCardNetworks: ['AMEX', 'DISCOVER', 'INTERAC', 'JCB', 'MASTERCARD', 'VISA'],
+                    allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS']
+                }
+            }];
+        }
+
+        /**
+         * Create Google Pay button
+         */
+        function createGooglePayButton() {
+            try {
+                const button = paymentsClient.createButton({
+                    onClick: onGooglePayClicked,
+                    allowedPaymentMethods: getPaymentMethods()
+                });
+                document.getElementById('googlePayButton').appendChild(button);
+            } catch (error) {
+                console.error('Error creating Google Pay button:', error);
+                createFallbackButton();
+            }
+        }
+
+        /**
+         * Create fallback button for demo (when Google Pay API not available)
+         */
+        function createFallbackButton() {
+            const button = document.createElement('button');
+            button.style.cssText = `
+                width: 100%;
+                padding: 12px;
+                background: #1f2937;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.2s;
+                margin-bottom: 20px;
+            `;
+            button.textContent = '💳 Google Pay (Demo Mode)';
+            button.onmouseover = () => button.style.background = '#111827';
+            button.onmouseout = () => button.style.background = '#1f2937';
+            button.onclick = onDemoPaymentClicked;
+            document.getElementById('googlePayButton').appendChild(button);
+        }
+
+        /**
+         * Handle Google Pay button click
+         */
+        function onGooglePayClicked() {
+            const paymentDataRequest = {
+                apiVersion: 2,
+                apiVersionMinor: 0,
+                allowedPaymentMethods: getPaymentMethods(),
+                transactionInfo: {
+                    totalPriceStatus: 'FINAL',
+                    totalPrice: PAYMENT_AMOUNT,
+                    currencyCode: CURRENCY_CODE
+                },
+                merchantInfo: {
+                    merchantId: 'BCR2DN4TU7HN7I2O', // Demo merchant ID
+                    //merchantId: 'BCR2DN4T873N4AQA', // Demo merchant ID
+                    merchantName: 'Demo Store'
+                }
+            };
+
+            paymentsClient.loadPaymentData(paymentDataRequest)
+                .then(paymentData => {
+                    processPaymentWithToken(paymentData);
+                })
+                .catch(err => {
+                    showError(`Payment cancelled or failed: ${err.message}`);
+                    console.error('Payment error:', err);
+                });
+        }
+
+        /**
+         * Handle demo payment button click (when Google Pay API not available)
+         */
+        function onDemoPaymentClicked() {
+            // Simulate Google Pay response
+            const mockPaymentData = {
+                paymentMethodData: {
+                    tokenizationData: {
+                        token: 'demo_token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+                    }
+                }
+            };
+            processPaymentWithToken(mockPaymentData);
+        }
+
+        /**
+         * Process payment with token
+         */
+        function processPaymentWithToken(paymentData) {
+            const paymentToken = paymentData.paymentMethodData.tokenizationData.token;
+            
+            // Show loading state
+            document.getElementById('googlePayButton').disabled = true;
+            showLoadingSpinner(true);
+            clearMessage();
+
+            // Send to server
+            fetch(`${SERVER_URL}/api/process-payment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    token: paymentToken,
+                    amount: PAYMENT_AMOUNT,
+                    currency: CURRENCY_CODE
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoadingSpinner(false);
+                document.getElementById('googlePayButton').disabled = false;
+
+                if (data.success) {
+                    showSuccess(`✓ Payment successful!`);
+                    displayTransactionDetails(data.transaction);
+                    console.log('Payment successful:', data);
+                } else {
+                    showError(`✗ Payment failed: ${data.error}`);
+                    console.error('Payment error:', data);
+                }
+            })
+            .catch(error => {
+                showLoadingSpinner(false);
+                document.getElementById('googlePayButton').disabled = false;
+                showError(`✗ Network error: ${error.message}`);
+                console.error('Request error:', error);
+            });
+        }
+
+        /**
+         * Display transaction details
+         */
+        function displayTransactionDetails(transaction) {
+            document.getElementById('txnId').textContent = transaction.transactionId;
+            document.getElementById('txnAmount').textContent = `$${transaction.amount} ${transaction.currency}`;
+            document.getElementById('txnCard').textContent = transaction.cardLast4 || 'N/A';
+            document.getElementById('txnStatus').textContent = transaction.status;
+            document.getElementById('txnTime').textContent = new Date(transaction.timestamp).toLocaleString();
+            document.getElementById('transactionDetails').style.display = 'block';
+        }
+
+        /**
+         * Test Process Payment API
+         */
+        function testProcessPayment() {
+            const mockToken = 'test_token_' + Date.now();
+            showLoadingSpinner(true);
+
+            fetch(`${SERVER_URL}/api/process-payment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    token: mockToken,
+                    amount: '25.50',
+                    currency: 'USD'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoadingSpinner(false);
+                displayApiResponse(data);
+            })
+            .catch(error => {
+                showLoadingSpinner(false);
+                displayApiResponse({ error: error.message });
+            });
+        }
+
+        /**
+         * View all payments
+         */
+        function viewAllPayments() {
+            showLoadingSpinner(true);
+
+            fetch(`${SERVER_URL}/api/payments`)
+                .then(response => response.json())
+                .then(data => {
+                    showLoadingSpinner(false);
+                    displayApiResponse(data);
+                })
+                .catch(error => {
+                    showLoadingSpinner(false);
+                    displayApiResponse({ error: error.message });
+                });
+        }
+
+        /**
+         * Display API response
+         */
+        function displayApiResponse(data) {
+            const responseDiv = document.getElementById('apiResponse');
+            responseDiv.textContent = JSON.stringify(data, null, 2);
+            responseDiv.classList.add('show');
+        }
+
+        /**
+         * UI Helper functions
+         */
+        function showLoadingSpinner(show) {
+            document.getElementById('loading-spinner').style.display = show ? 'block' : 'none';
+        }
+
+        function showSuccess(message) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = message;
+            msgDiv.className = 'success';
+            msgDiv.style.display = 'block';
+        }
+
+        function showError(message) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = message;
+            msgDiv.className = 'error';
+            msgDiv.style.display = 'block';
+        }
+
+        function clearMessage() {
+            const msgDiv = document.getElementById('message');
+            msgDiv.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

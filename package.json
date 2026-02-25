@@ -1,0 +1,17 @@
+{
+  "name": "google-pay-demo",
+  "version": "1.0.0",
+  "description": "Google Pay integration stub server",
+  "main": "google-pay-stub-server.js",
+  "scripts": {
+    "start": "node google-pay-stub-server.js",
+    "dev": "nodemon google-pay-stub-server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Google Pay Integration</title>
+</head>
+<body>
+    <button id="googlePayButton"></button>
+
+    <script async
+        src="https://pay.google.com/gstatic/js/pay.js">
+    </script>
+    
+    <script>
+        // Initialize Google Pay
+        const client = new google.payments.api.PaymentsClient({
+            environment: 'PRODUCTION' // Use 'TEST' for development
+        });
+
+        // Payment method configuration
+        const paymentMethods = [{
+            type: 'CARD',
+            parameters: {
+                allowedCardNetworks: ['AMEX', 'DISCOVER', 'INTERAC', 'JCB', 'MASTERCARD', 'VISA'],
+                allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS']
+            }
+        }];
+
+        // Merchant info
+        const merchantInfo = {
+            merchantId: 'YOUR_MERCHANT_ID',
+            merchantName: 'Your Business Name'
+        };
+
+        // Transaction details
+        const transactionInfo = {
+            totalPriceStatus: 'FINAL',
+            totalPrice: '10.00',
+            currencyCode: 'USD'
+        };
+
+        // Payment data request
+        const paymentDataRequest = {
+            apiVersion: 2,
+            apiVersionMinor: 0,
+            allowedPaymentMethods: paymentMethods,
+            transactionInfo: transactionInfo,
+            merchantInfo: merchantInfo
+        };
+
+        // Check if Google Pay is available
+        client.isReadyToPay({
+            allowedPaymentMethods: paymentMethods
+        }).then(response => {
+            if (response.result) {
+                // Create Google Pay button
+                const button = client.createButton({
+                    onClick: onGooglePayClicked
+                });
+                document.getElementById('googlePayButton').appendChild(button);
+            }
+        });
+
+        // Handle payment button click
+        function onGooglePayClicked() {
+            client.loadPaymentData(paymentDataRequest)
+                .then(paymentData => {
+                    // Send payment token to your server
+                    processPayment(paymentData);
+                })
+                .catch(err => {
+                    console.error('Payment failed:', err);
+                });
+        }
+
+        // Process payment (send to your backend)
+        function processPayment(paymentData) {
+            const paymentToken = paymentData.paymentMethodData.tokenizationData.token;
+            
+            fetch('/api/process-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    token: paymentToken,
+                    amount: '10.00',
+                    currency: 'USD'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Payment successful:', data);
+            })
+            .catch(error => {
+                console.error('Error processing payment:', error);
+            });
+        }
+    </script>
+</body>
+</html>
