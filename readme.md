@@ -4,6 +4,11 @@
 
 Google Pay is a fast, simple way to pay. This guide will walk you through the steps to implement Google Pay in your application, ensuring that users can make secure transactions effortlessly.
 
+<p align="center">
+  <img src="google-pay-demo.png" alt="Demo screenshot of app" width="720" />
+</p>
+
+
 ## Prerequisites
 
 Before you begin implementing Google Pay, you should have:
